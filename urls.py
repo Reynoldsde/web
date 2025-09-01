@@ -1,18 +1,30 @@
-from django.urls import path
-from .views import home_page, tasks,  update_index, terms
-from .withdraw import create_withdrawal_request, list_withdrawals
-from .balance import balance_tracking
-from .ssl import serve_validation_file
+"""sydney_digital_marketing URL Configuration
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/4.1/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
+from django.urls import path, include
 
 urlpatterns = [
-    path('', home_page, name="home"),
-    path('tasks/', tasks, name="tasks"),
-    path('withdraw/create/', create_withdrawal_request, name='create_withdrawal_request'),
-    path('withdraw/', list_withdrawals, name='list_withdrawals'),
-    
-    path('boost_product/', update_index, name='boost_product'),
-    path('balance/', balance_tracking, name='balance_tracking'),
-    
-    path('terms_and_conditions/', terms, name='terms'),
-    path('.well-known/pki-validation/5013459ACD3259D4CE7E743FD5D06B66.txt', serve_validation_file, name='serve_validation_file'),
+    path('admin/', admin.site.urls),
+    path('', include('Account.urls')),
+    path('', include('home.urls')),
+    path('', include('chat.urls')),
+    path('adminpanel/', include('adminpanel.urls')),
+    path('products/', include('products.urls')),
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
