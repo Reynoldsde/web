@@ -1,30 +1,20 @@
-"""sydney_digital_marketing URL Configuration
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-from django.contrib import admin
-from django.conf import settings
-from django.conf.urls.static import static
-from django.urls import path, include
+# urls.py
+from django.urls import path
+from . import views
+from .user_search import user_search
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('Account.urls')),
-    path('', include('home.urls')),
-    path('', include('chat.urls')),
-    path('adminpanel/', include('adminpanel.urls')),
-    path('products/', include('products.urls')),
-]
+    # Task URLs
+    path('tasks/', views.task_list, name='task_list'),
+    path('tasks/create/', views.create_task, name='create_task'),
+    path('tasks/edit/<int:pk>/', views.edit_task, name='edit_task'),
+    path('tasks/delete/<int:pk>/', views.delete_task, name='delete_task'),
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Product URLs
+    path('products/', views.product_list, name='product_list'),
+    path('products/create/', views.create_product, name='create_product'),
+    path('products/edit/<int:pk>/', views.edit_product, name='edit_product'),
+    path('products/delete/<int:pk>/', views.delete_product, name='delete_product'),
+
+    path('user-search/', user_search, name='user-search'),
+]
