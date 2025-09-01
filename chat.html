@@ -1,0 +1,223 @@
+{% load static %}
+
+{% if request.user.is_admin != True %}
+<a class="chat-button" id="chat-button" onclick="open_chat()">
+    <i class="fas fa-comment-alt"></i>
+    <span class="notification-counter" style="display: none;" id="notification-counter">0</span>
+</a>
+{% endif %}
+
+<div class="chat_menu" id="chat_menu" style="display: none;">
+    <div class="top">
+        <div class="top_top">
+            <span>Questions? Chat With Us!</span>
+            <span><i class="fa-solid fa-xmark" onclick="close_chat()"></i></span>
+        </div>
+        <img src="{% static './img/logo.jpg'%}" alt="">
+    </div>
+    
+    <div class="messages">
+        {% for message in conversation %}
+            {% if message.sender == request.user %}
+                <span class="message-to">
+                    <div class="message_cont">{{message.content}}</div>
+                </span>
+            {% else %}
+            <span class="message-from">
+                <div class="message_cont">{{ message.content }}</div>
+            </span>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="input">
+        <form id="messageForm" action="/send_message/" method="post">
+            {% csrf_token %}
+            <textarea id="emojiInput" name="message" placeholder="Type a message..."></textarea>
+            <span id="emojiIcon" class="emoji-icon">😀</span>
+            <div id="emojiPicker" class="emoji-picker">
+                <span class="emoji">😀</span>
+                <span class="emoji">😂</span>
+                <span class="emoji">😍</span>
+                <span class="emoji">🥳</span>
+                <span class="emoji">🤔</span>
+                <span class="emoji">😎</span>
+                <span class="emoji">😢</span>
+                <span class="emoji">😡</span>
+            </div>
+            <button type="submit"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>    
+</div>
+
+<script>
+    let chat_opened = false;
+    
+    function close_chat() {
+        const chatMenu = document.getElementById("chat_menu");
+        chatMenu.classList.add("closing");
+        chatMenu.classList.remove("opening");
+        
+        setTimeout(() => {
+            chatMenu.style.display = "none";
+            document.getElementById("chat-button").style.display = "flex";
+        }, 300); // Match the duration of your animation
+    
+        chat_opened = false;
+    }
+    
+    function open_chat() {
+        const chatMenu = document.getElementById("chat_menu");
+        chatMenu.classList.remove("closing");
+        chatMenu.classList.add("opening");
+        chatMenu.style.display = "flex";
+        document.getElementById("chat-button").style.display = "none";
+    
+        chat_opened = true;
+    }
+    
+    document.getElementById('emojiIcon').addEventListener('click', function() {
+        const emojiPicker = document.getElementById('emojiPicker');
+        emojiPicker.style.display = emojiPicker.style.display === 'block' ? 'none' : 'block';
+    });
+    
+    document.querySelectorAll('.emoji').forEach(emoji => {
+        emoji.addEventListener('click', function() {
+            const emojiInput = document.getElementById('emojiInput');
+            emojiInput.value += this.textContent;
+            document.getElementById('emojiPicker').style.display = 'none';
+        });
+    });
+    
+    // Close the emoji picker if clicked outside
+    document.addEventListener('click', function(event) {
+        const emojiPicker = document.getElementById('emojiPicker');
+        const emojiIcon = document.getElementById('emojiIcon');
+        if (!emojiPicker.contains(event.target) && !emojiIcon.contains(event.target)) {
+            emojiPicker.style.display = 'none';
+        }
+    });
+    
+    function scrollToBottom() {
+        const messagesDiv = document.querySelector('.messages');
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    
+    function isAtBottom() {
+        const messagesDiv = document.querySelector('.messages');
+        return messagesDiv.scrollHeight - messagesDiv.scrollTop <= messagesDiv.clientHeight + 100; // Adjust threshold as necessary
+    }
+    
+    // Call the scroll function after appending a new message
+    $(document).ready(function() {
+        $('#messageForm').on('submit', function(e) {
+            e.preventDefault(); // Prevent the form from submitting normally
+    
+            // Get the form data
+            var formData = {
+                message: $('#emojiInput').val(), // Get the value of the message input field
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val() // CSRF token for Django
+            };
+    
+            $.ajax({
+                url: '/send_message/', // Explicitly send to /send_message/
+                type: 'POST',
+                data: formData, // The form data
+                success: function(response) {
+                    if (response.success) {
+                        // Append the new message to the messages div
+                        var newMessage = `
+                            <span class="message-to">
+                                <div class="message_cont">${response.message}</div>
+                            </span>
+                        `;
+                        $('.messages').append(newMessage); // Append new message to chat
+    
+                        // Clear the input field
+                        $('#emojiInput').val('');
+    
+                        // Scroll to the bottom of the chat if at the bottom
+                        scrollToBottom();
+                    } else {
+                        console.log(response.error); // Handle any errors
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX error: " + error); // Handle AJAX error
+                }
+            });
+        });
+    
+        $('#chat-button').on('click', function() {
+            open_chat();
+            scrollToBottom(); // Ensure chat is scrolled to bottom on opening
+        });
+    
+        messageInterval = setInterval(function() {
+            if (chat_opened == true) {
+                $.ajax({
+                    url: '/update_messages/', // URL for fetching new messages
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            // Append new messages to the chat
+                            let newMessagesCount = 0; // Track new messages
+                            response.messages.forEach(function(message) {
+                                var newMessage = `
+                                    <span class="message-from">
+                                        <div class="message_cont">${message.content}</div>
+                                    </span>
+                                `;
+                                $('.messages').append(newMessage);
+                                newMessagesCount++;
+                            });
+    
+                            // Scroll to the bottom after updating messages if at the bottom
+                            if (isAtBottom()) {
+                                scrollToBottom();
+                            }
+                        } else {
+                            console.log(response.error); // Handle any errors
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("AJAX error: " + error); // Handle AJAX error
+                    }
+                });
+            }
+        }, 2000); // 2 seconds interval
+    });
+</script>
+{% if request.user.is_admin == False %}
+<script>
+        // Function to fetch new messages and check if there are any new messages
+    function checkForNewMessages() {
+        $.ajax({
+            url: '/check_new_messages/',  // Update to your actual endpoint for checking new messages
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                const counterElement = $('#notification-counter');
+
+                if (data.unread_count > 0) {  // Assuming API returns new_messages_count                
+                    // Update the counter and show it
+                    counterElement.text(data.unread_count);
+                    counterElement.show();
+                } else {
+                    // Hide the counter if no new messages
+                    counterElement.hide();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error checking new messages:', error);
+            }
+        });
+    }
+
+    // Check for new messages every 10 seconds
+    $(document).ready(function() {
+        checkForNewMessages()
+        setInterval(checkForNewMessages, 10000);  // Adjust the interval as necessary
+    });
+</script>
+{% endif %}
