@@ -1,9 +1,9 @@
 from django.contrib import admin
-from django.contrib.auth.models import GroupManager
-from .models import account
-
-class Account(admin.ModelAdmin):
-    list_display = ['pk', 'last_login' ,'email', 'userid', 'username', 'phone']
-    
-admin.site.register(account, Account)
+from .models import invitation_code ,selection_log, WithdrawalRequest, finished_task, Terms_and_conditions
 # Register your models here.
+
+admin.site.register(invitation_code)
+admin.site.register(selection_log)
+admin.site.register(WithdrawalRequest)
+admin.site.register(finished_task)
+admin.site.register(Terms_and_conditions)
